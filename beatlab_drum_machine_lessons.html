@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BeatLab — Drum Machine & Lessons</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070b14;color:#eef3ff;font:15px system-ui,Arial,sans-serif}
+header{padding:24px 5%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #202b40;background:#09101d}
+.logo{font-size:27px;font-weight:900;background:linear-gradient(90deg,#39a9ff,#b66cff);color:transparent;background-clip:text}
+nav button{background:none;border:0;color:#9ca9bf;padding:10px 15px;cursor:pointer;font-size:15px}
+.wrap{max-width:1250px;margin:28px auto;padding:0 18px}.grid{display:grid;grid-template-columns:1fr 330px;gap:18px}
+.card{background:#0c1422;border:1px solid #233149;border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 15px 45px #0005}
+.controls{display:flex;gap:15px;align-items:center;flex-wrap:wrap}.btn{border:1px solid #34445f;background:#121d2f;color:white;border-radius:10px;padding:12px 17px;cursor:pointer}.play{background:#182c23;border-color:#42e57c}.danger{background:#24151a}
+input[type=range]{accent-color:#9d62ff}.value{font-weight:700;color:#b879ff}
+.sequencer{overflow:auto}.steps{display:grid;grid-template-columns:120px repeat(16,42px);gap:6px;min-width:850px}
+.label{display:flex;align-items:center;font-weight:700}.num{text-align:center;color:#77859d;font-size:12px;padding:7px 0}
+.cell{height:38px;border-radius:7px;background:#172235;border:1px solid #202e44;cursor:pointer;transition:.12s}
+.cell.on{background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c),transparent 55%);border-color:var(--c)}
+.cell.playing{outline:2px solid white}
+.lesson h2{margin-top:0}.lesson h3{color:#bd8aff}.lesson p{color:#9aa8bd;line-height:1.6}.lesson li{margin:10px 0;color:#b6c2d5}
+.pads{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.pad{padding:22px 8px;text-align:center;border-radius:12px;border:1px solid var(--c);background:#111c2d;color:white;font-weight:800;cursor:pointer}.pad small{display:block;color:#8290a6;margin-top:5px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.tag{font-size:12px;color:#aebbd0}
+.challenge{background:linear-gradient(135deg,#241a46,#151b38);border-color:#7047c8}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.lesson{order:2}.pads{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div><div class="logo">BEATLAB</div><div style="color:#8795ab">Make beats. Learn rhythm.</div></div><nav><button onclick="scrollTo({top:0,behavior:'smooth'})">Machine</button><button onclick="document.querySelector('.lesson').scrollIntoView({behavior:'smooth'})">Lessons</button></nav></header>
+
+<div class="wrap">
+<div class="grid">
+<main>
+<div class="card">
+<div class="controls">
+<button class="btn play" id="play">▶ Play</button><button class="btn danger" id="stop">■ Stop</button>
+<label>Tempo <b class="value" id="tempoVal">120</b> BPM<br><input id="tempo" type="range" min="60" max="180" value="120"></label>
+<label>Master <input id="master" type="range" min="0" max="100" value="70"></label>
+</div>
+</div>
+
+<div class="card sequencer">
+<div class="section-title"><h2>16-Step Sequencer</h2><span class="tag">Click cells • Space = play/stop</span></div>
+<div id="seq" class="steps"></div>
+</div>
+
+<div class="card">
+<div class="section-title"><h2>Drum Pads</h2><span class="tag">Click to preview sounds</span></div>
+<div id="pads" class="pads"></div>
+</div>
+
+<div class="card">
+<div class="section-title"><h2>Quick Patterns</h2></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button class="btn" onclick="preset('basic')">Basic Rock</button>
+<button class="btn" onclick="preset('funk')">Funk</button>
+<button class="btn" onclick="preset('house')">House</button>
+<button class="btn" onclick="clearPattern()">Clear</button>
+</div>
+</div>
+</main>
+
+<aside class="lesson card">
+<h2>🎓 Lessons</h2>
+<h3>1. What is rhythm?</h3>
+<p>Rhythm is the pattern of sounds and silences. A simple beat uses four main counts:</p>
+<p style="font-size:22px;text-align:center">1 — 2 — 3 — 4</p>
+<ul><li><b>Kick:</b> the low “thump” that anchors the beat.</li><li><b>Snare:</b> the sharp hit often heard on beats 2 and 4.</li><li><b>Hi-hat:</b> short sounds that keep time.</li></ul>
+<h3>2. Your first beat</h3>
+<p>Try putting Kick on steps <b>1, 5, 9, 13</b>, Snare on <b>5 and 13</b>, and closed hats on every other step.</p>
+<h3>3. Learn by listening</h3>
+<p>Start slowly around 80–100 BPM. Once the pattern feels comfortable, raise the tempo gradually.</p>
+<div class="card challenge"><h3>🏆 Practice Challenge</h3><p>Create a beat using at least three different drum sounds.</p><button class="btn" onclick="challenge()">Start Challenge</button></div>
+</aside>
+</div>
+</div>
+
+<script>
+const sounds=[
+{name:'Kick',key:'Q',color:'#ff4f67'}, {name:'Snare',key:'W',color:'#ff8a32'},
+{name:'Clap',key:'E',color:'#ffc02e'}, {name:'Hat Closed',key:'A',color:'#7bd84a'},
+{name:'Hat Open',key:'S',color:'#35d4bd'}, {name:'Ride',key:'D',color:'#419cff'},
+{name:'Crash',key:'Z',color:'#a55cff'}
+];
+let pattern=sounds.map(()=>Array(16).fill(false)), playing=false, step=0, timer=null, audio=null, master=.7;
+
+function build(){
+ const seq=document.getElementById('seq');
+ seq.innerHTML='<div></div>'+Array.from({length:16},(_,i)=>`<div class="num">${i+1}</div>`).join('');
+ sounds.forEach((s,r)=>{
+  seq.innerHTML+=`<div class="label">${s.name}</div>`+Array.from({length:16},(_,c)=>`<div class="cell ${pattern[r][c]?'on':''}" style="--c:${s.color}" data-r="${r}" data-c="${c}"></div>`).join('');
+ });
+ seq.querySelectorAll('.cell').forEach(x=>x.onclick=()=>{let r=+x.dataset.r,c=+x.dataset.c;pattern[r][c]=!pattern[r][c];x.classList.toggle('on');});
+ const pads=document.getElementById('pads');
+ pads.innerHTML=sounds.map((s,i)=>`<button class="pad" style="--c:${s.color}" onclick="hit(${i})">${s.name}<small>${s.key}</small></button>`).join('');
+}
+function audioCtx(){if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+function hit(i){
+ const a=audioCtx(),t=a.currentTime,g=a.createGain();g.gain.value=master;g.connect(a.destination);
+ const o=a.createOscillator(); o.connect(g);
+ if(i===0){o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(48,t+.16);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.001,t+.2);o.start(t);o.stop(t+.21)}
+ else if(i===1||i===2){o.type='triangle';o.frequency.value=i===1?190:330;g.gain.setValueAtTime(.35,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.start(t);o.stop(t+.13)}
+ else {o.type='square';o.frequency.value=i===3?700:i===4?950:i===5?1300:1700;g.gain.setValueAtTime(i===6?.18:.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.08);o.start(t);o.stop(t+.09)}
+}
+function tick(){
+ document.querySelectorAll('.playing').forEach(x=>x.classList.remove('playing'));
+ document.querySelectorAll(`[data-c="${step}"]`).forEach(x=>x.classList.add('playing'));
+ pattern.forEach((row,i)=>{if(row[step])hit(i)});
+ step=(step+1)%16;
+}
+function start(){if(playing)return;playing=true;step=0;let bpm=+tempo.value;timer=setInterval(tick,60000/bpm/4);tick();play.textContent='⏸ Playing'}
+function stop(){playing=false;clearInterval(timer);timer=null;document.querySelectorAll('.playing').forEach(x=>x.classList.remove('playing'));play.textContent='▶ Play'}
+play.onclick=()=>playing?stop():start();stop.onclick=stop;
+tempo.oninput=()=>{tempoVal.textContent=tempo.value;if(playing){stop();start()}};master.oninput=()=>master=master.value/100;
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();playing?stop():start()}const k=e.key.toUpperCase(),i=sounds.findIndex(s=>s.key===k);if(i>=0)hit(i)});
+function clearPattern(){pattern=sounds.map(()=>Array(16).fill(false));build()}
+function preset(type){
+ clearPattern();
+ const put=(r,arr)=>arr.forEach(c=>pattern[r][c]=true);
+ if(type==='basic'){put(0,[0,4,8,12]);put(1,[4,12]);put(3,[0,2,4,6,8,10,12,14])}
+ if(type==='funk'){put(0,[0,3,8,10,12]);put(1,[4,12]);put(2,[6,14]);put(3,[0,2,4,6,8,10,12,14]);put(4,[7,15])}
+ if(type==='house'){put(0,[0,4,8,12]);put(1,[4,12]);put(3,[0,2,4,6,8,10,12,14]);put(4,[6,14])}
+ build();
+}
+function challenge(){alert('Challenge: build a beat using 3 or more different drum sounds. Press Play when you are ready!')}
+build();preset('basic');
+</script>
+</body>
+</html>
