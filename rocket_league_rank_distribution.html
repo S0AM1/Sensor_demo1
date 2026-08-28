@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket League Rank Distribution</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#16243b 0%,#080c14 45%,#05070b 100%);color:#fff;min-height:100vh}
+header{padding:30px 6%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #263247;background:rgba(5,9,16,.75);backdrop-filter:blur(10px)}
+.logo{font-size:24px;font-weight:800;letter-spacing:1px}.logo span{color:#28a9ff}nav{color:#8d9ab0;font-size:14px}
+.container{width:88%;max-width:1200px;margin:45px auto}.hero{margin-bottom:35px}
+.hero h1{font-size:clamp(32px,5vw,58px);margin-bottom:12px}.hero p{color:#8d9ab0;max-width:650px;line-height:1.6}
+.controls{display:flex;gap:12px;margin:30px 0;flex-wrap:wrap}
+select,input{background:#101827;color:white;border:1px solid #29364c;border-radius:10px;padding:13px 16px;outline:none}input{min-width:220px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:25px}
+.stat{background:rgba(16,24,39,.85);border:1px solid #263247;border-radius:16px;padding:22px}.stat small{color:#77849a}.stat strong{display:block;font-size:27px;margin-top:8px}
+.card{background:rgba(12,18,29,.9);border:1px solid #263247;border-radius:20px;padding:25px;margin-bottom:25px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.card h2{margin-bottom:5px}.subtitle{color:#718097;font-size:14px;margin-bottom:30px}
+.rank-row{display:grid;grid-template-columns:170px 1fr 70px;align-items:center;gap:15px;margin:15px 0}
+.rank-name{font-weight:bold}.rank-name span{display:block;color:#758299;font-size:12px;margin-top:4px}
+.bar-bg{height:13px;background:#1a2435;border-radius:20px;overflow:hidden}.bar{height:100%;width:0;border-radius:20px;transition:width 1s ease;background:linear-gradient(90deg,#168cff,#6bd4ff)}
+.percent{text-align:right;color:#aeb9ca}.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:25px}
+.badge{padding:7px 12px;border-radius:20px;background:#172236;color:#9eb0c9;font-size:12px}
+footer{text-align:center;color:#536177;padding:30px;font-size:13px}
+@media(max-width:700px){header{padding:22px}nav{display:none}.container{width:92%;margin:30px auto}.stats{grid-template-columns:1fr}.rank-row{grid-template-columns:110px 1fr 50px;gap:10px}.rank-name{font-size:13px}}
+</style>
+</head>
+<body>
+<header><div class="logo">RL<span>RANKS</span></div><nav>RANK DISTRIBUTION • COMPETITIVE</nav></header>
+<main class="container">
+<section class="hero"><h1>Rank Distribution</h1><p>Explore how Rocket League players are distributed across competitive ranks. Filter by playlist and season.</p></section>
+<div class="controls">
+<select id="playlist"><option value="2v2">2v2 Doubles</option><option value="3v3">3v3 Standard</option><option value="1v1">1v1 Duel</option></select>
+<select id="season"><option>Season 20</option><option>Season 19</option><option>Season 18</option></select>
+<input id="search" type="text" placeholder="Search rank...">
+</div>
+<section class="stats">
+<div class="stat"><small>Most Common Rank</small><strong id="commonRank">Diamond I</strong></div>
+<div class="stat"><small>Average Rank</small><strong>Diamond II</strong></div>
+<div class="stat"><small>Top 1% Begins At</small><strong>Grand Champion III</strong></div>
+</section>
+<section class="card"><h2>Player Distribution</h2><p class="subtitle">Percentage of players at each competitive rank</p><div id="distribution"></div>
+<div class="legend"><div class="badge">Bronze</div><div class="badge">Silver</div><div class="badge">Gold</div><div class="badge">Platinum</div><div class="badge">Diamond</div><div class="badge">Champion</div><div class="badge">Grand Champion</div><div class="badge">Supersonic Legend</div></div>
+</section></main>
+<footer>Fan-made Rocket League ranking visualization • Example data</footer>
+<script>
+const data={
+"2v2":[["Bronze I",.3],["Bronze II",.5],["Bronze III",.8],["Silver I",1.2],["Silver II",1.7],["Silver III",2.3],["Gold I",3.2],["Gold II",4.1],["Gold III",5],["Platinum I",6.5],["Platinum II",7.8],["Platinum III",8.4],["Diamond I",10.2],["Diamond II",9.5],["Diamond III",8.1],["Champion I",6.8],["Champion II",4.6],["Champion III",2.8],["Grand Champion I",1.4],["Grand Champion II",.6],["Grand Champion III",.2],["Supersonic Legend",.05]],
+"3v3":[["Bronze I",.5],["Bronze II",.8],["Bronze III",1.1],["Silver I",1.6],["Silver II",2.2],["Silver III",3],["Gold I",4.2],["Gold II",5.4],["Gold III",6.2],["Platinum I",7.5],["Platinum II",8.3],["Platinum III",8.7],["Diamond I",9.3],["Diamond II",8.5],["Diamond III",7.1],["Champion I",5.5],["Champion II",3.6],["Champion III",2.1],["Grand Champion I",1.1],["Grand Champion II",.4],["Grand Champion III",.1],["Supersonic Legend",.03]],
+"1v1":[["Bronze I",1],["Bronze II",1.4],["Bronze III",1.9],["Silver I",2.5],["Silver II",3.2],["Silver III",4],["Gold I",5.1],["Gold II",6.2],["Gold III",7],["Platinum I",8],["Platinum II",8.5],["Platinum III",8],["Diamond I",7],["Diamond II",5.8],["Diamond III",4.4],["Champion I",3],["Champion II",1.7],["Champion III",.8],["Grand Champion I",.3],["Grand Champion II",.1],["Grand Champion III",.04],["Supersonic Legend",.01]]};
+const distribution=document.getElementById("distribution"),playlist=document.getElementById("playlist"),search=document.getElementById("search");
+function render(){distribution.innerHTML="";data[playlist.value].filter(r=>r[0].toLowerCase().includes(search.value.toLowerCase())).forEach(r=>{const row=document.createElement("div");row.className="rank-row";row.innerHTML=`<div class="rank-name">${r[0]}<span>Competitive Rank</span></div><div class="bar-bg"><div class="bar" data-width="${r[1]*8}%"></div></div><div class="percent">${r[1]}%</div>`;distribution.appendChild(row)});setTimeout(()=>document.querySelectorAll(".bar").forEach(b=>b.style.width=b.dataset.width),50)}
+playlist.addEventListener("change",render);search.addEventListener("input",render);render();
+</script>
+</body>
+</html>
