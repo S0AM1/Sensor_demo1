@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RL Rank Distribution — Season 22</title>
+<style>
+:root{--bg:#060912;--card:#0d1422;--line:#24334c;--text:#f3f6ff;--muted:#8d9bb2;--accent:#38a8ff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#172b4c 0,#080d18 38%,#05070d 75%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif}
+header{border-bottom:1px solid var(--line);background:#080d17eF;padding:26px max(18px,5%);backdrop-filter:blur(14px)}
+.header{max-width:1200px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.logo{font-size:28px;font-weight:900;letter-spacing:1px;background:linear-gradient(90deg,#35aaff,#a96bff);background-clip:text;-webkit-background-clip:text;color:transparent}
+.sub{color:var(--muted);margin-top:4px}
+.wrap{max-width:1200px;margin:28px auto;padding:0 16px}
+.hero{margin-bottom:22px}.hero h1{font-size:clamp(32px,6vw,56px);margin:0 0 8px}.hero p{color:var(--muted);max-width:720px;line-height:1.6}
+.controls,.stats,.content{display:grid;gap:14px}.controls{grid-template-columns:1fr 1fr;margin:22px 0}.control,.card{background:#0d1422eF;border:1px solid var(--line);border-radius:16px;padding:18px}
+select{width:100%;margin-top:8px;background:#111c2d;color:white;border:1px solid #33445f;border-radius:10px;padding:13px;font-size:16px}
+.stats{grid-template-columns:repeat(3,1fr);margin-bottom:14px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:25px;margin-top:7px}
+.content{grid-template-columns:1fr 330px}.chart-card{min-width:0}
+.chart{height:500px;display:flex;align-items:flex-end;gap:5px;padding:28px 8px 42px;border-bottom:1px solid #30405a;position:relative}
+.yline{position:absolute;left:0;right:0;border-top:1px dashed #26354b}.yline span{position:absolute;right:4px;top:-18px;color:#64738a;font-size:11px}
+.barwrap{height:100%;flex:1;min-width:13px;display:flex;align-items:flex-end;position:relative}
+.bar{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#42b8ff,#675cff);min-height:2px;transition:.35s;cursor:pointer}
+.bar:hover{filter:brightness(1.3);transform:translateY(-2px)}
+.xlabel{position:absolute;bottom:-34px;width:100%;text-align:center;color:#7f8da5;font-size:10px;transform:rotate(-45deg);transform-origin:center}
+.tooltip{position:fixed;pointer-events:none;display:none;background:#111b2c;border:1px solid #405574;border-radius:10px;padding:10px 12px;box-shadow:0 12px 30px #0008;z-index:20;font-size:13px}
+.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid #202d42;text-align:left}.table th{color:#8290a6;font-size:12px}.table td:last-child{text-align:right;font-weight:700}
+.lesson h2{margin-top:0}.lesson p,.source{color:var(--muted);line-height:1.6}.rankbox{padding:13px;border:1px solid #273750;border-radius:11px;margin:8px 0;background:#101a2b}
+button{border:0;border-radius:10px;padding:11px 14px;background:#17253a;color:white;cursor:pointer}.buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+@media(max-width:850px){.content{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.chart{height:430px}}
+</style>
+</head>
+<body>
+<header><div class="header"><div><div class="logo">RL RANKS</div><div class="sub">Official Season 22 distribution</div></div><div style="color:#7f8da5">Fan-made visualization</div></div></header>
+
+<div class="wrap">
+<section class="hero">
+<h1>Rocket League Rank Distribution</h1>
+<p>Explore the percentage of players in every rank. This version uses the <b>Season 22</b> distribution data provided directly by Psyonix and published by the Rocket League subreddit moderator team.</p>
+</section>
+
+<div class="controls">
+<div class="control"><label>Playlist</label><select id="playlist"></select></div>
+<div class="control"><label>View</label><select id="view"><option value="distribution">Rank Distribution</option><option value="percentile">Reverse Percentile — % above rank</option></select></div>
+</div>
+
+<div class="stats">
+<div class="card stat"><small>Most populated rank</small><strong id="most">—</strong></div>
+<div class="card stat"><small>Largest single-rank share</small><strong id="largest">—</strong></div>
+<div class="card stat"><small>Top 1% starts around</small><strong id="top1">—</strong></div>
+</div>
+
+<div class="content">
+<section class="card chart-card">
+<h2 id="chartTitle">Distribution</h2>
+<p class="source">Tap/hover a bar for exact data.</p>
+<div class="chart" id="chart">
+<div class="yline" style="bottom:25%"><span>25%</span></div>
+<div class="yline" style="bottom:50%"><span>50%</span></div>
+<div class="yline" style="bottom:75%"><span>75%</span></div>
+</div>
+</section>
+
+<aside class="card lesson">
+<h2>📊 How to read it</h2>
+<div class="rankbox"><b>Distribution</b><p>“What percentage of players are in this rank?”</p></div>
+<div class="rankbox"><b>Reverse percentile</b><p>“What percentage of players are above this rank?” A smaller number means a higher percentile.</p></div>
+<h3>Season 22 example</h3>
+<p id="example">—</p>
+<div class="buttons"><button id="sortBtn">Show highest shares</button><button id="resetBtn">Reset order</button></div>
+</aside>
+</div>
+
+<div class="card" style="margin-top:14px">
+<h2>Rank Table</h2>
+<table class="table"><thead><tr><th>Rank</th><th>Players in rank</th><th>Share</th></tr></thead><tbody id="table"></tbody></table>
+</div>
+
+<p class="source">Data source: Psyonix-provided Season 22 rank distribution, published by r/RocketLeague moderators. The source states the data was provided directly by Psyonix.</p>
+</div>
+<div class="tooltip" id="tip"></div>
+
+<script>
+const ranks=[
+"Bronze 1","Bronze 2","Bronze 3","Silver 1","Silver 2","Silver 3",
+"Gold 1","Gold 2","Gold 3","Platinum 1","Platinum 2","Platinum 3",
+"Diamond 1","Diamond 2","Diamond 3","Champion 1","Champion 2","Champion 3",
+"Grand Champion 1","Grand Champion 2","Grand Champion 3","Supersonic Legend"
+];
+
+const data={
+"Doubles (2v2)":[2.280,1.841,2.846,4.287,5.898,7.525,9.108,9.523,9.230,8.929,7.370,6.114,7.071,5.220,3.883,4.264,2.196,1.214,.793,.290,.082,.038],
+"Standard (3v3)":[.765,.892,1.773,3.457,6.193,9.698,12.798,13.447,11.835,9.854,7.849,5.926,5.814,3.845,2.413,2.025,.823,.362,.171,.050,.011,.001],
+"Solo Duel (1v1)":[1.792,1.506,2.584,4.393,6.718,9.454,12.843,14.975,15.696,13.554,8.026,4.196,2.244,1.069,.504,.251,.108,.048,.024,.010,.004,.003],
+"Rumble":[.064,.147,.443,1.245,3.210,6.993,12.740,18.374,19.471,14.833,10.011,5.647,3.132,1.645,.930,.542,.278,.172,.089,.025,.006,.004],
+"Hoops":[.126,.259,.881,1.620,6.347,8.392,18.772,14.699,20.634,9.775,9.763,3.441,2.769,.955,.778,.312,.268,.119,.064,.019,.004,.004],
+"Dropshot":[.422,.776,1.850,3.867,4.278,9.757,9.122,16.422,11.406,15.456,8.041,8.346,3.648,3.282,1.246,1.088,.382,.327,.199,.058,.013,.012],
+"Snowday":[.241,.581,1.659,2.327,7.295,8.527,17.739,13.226,18.040,9.269,9.950,4.128,3.690,1.326,1.060,.399,.313,.142,.064,.017,.003,.003],
+"Heatseeker":[13.998,5.918,7.534,9.602,10.491,7.253,10.703,9.336,7.499,4.388,4.960,3.464,2.341,1.231,.449,.438,.192,.086,.073,.018,.007,.017]
+};
+
+const playlist=document.getElementById("playlist"),view=document.getElementById("view"),chart=document.getElementById("chart"),table=document.getElementById("table"),tip=document.getElementById("tip");
+Object.keys(data).forEach(x=>playlist.add(new Option(x,x)));
+
+let order=[...Array(22).keys()];
+function render(){
+ const vals=data[playlist.value];
+ const mode=view.value;
+ document.getElementById("chartTitle").textContent=mode==="distribution"?"Rank Distribution":"Reverse Percentile";
+ const pairs=order.map(i=>({i,name:ranks[i],v:vals[i]}));
+ chart.querySelectorAll(".barwrap").forEach(x=>x.remove());
+ const max=mode==="distribution"?Math.max(...vals):100;
+ let cumulative=100;
+ const reverse=vals.map(v=>{const x=cumulative;cumulative-=v;return Math.max(0,x)});
+ pairs.forEach(o=>{
+   const value=mode==="distribution"?o.v:reverse[o.i];
+   const w=document.createElement("div");w.className="barwrap";
+   const b=document.createElement("div");b.className="bar";b.style.height=(value/max*100)+"%";
+   b.addEventListener("pointerenter",()=>showTip(o.name,value));
+   b.addEventListener("pointermove",e=>showTip(o.name,value,e));
+   b.addEventListener("pointerleave",()=>tip.style.display="none");
+   b.addEventListener("click",()=>showTip(o.name,value));
+   const x=document.createElement("div");x.className="xlabel";x.textContent=o.name.replace("Grand Champion","GC");
+   w.append(b,x);chart.appendChild(w);
+ });
+ const maxVal=Math.max(...vals),mi=vals.indexOf(maxVal);
+ document.getElementById("most").textContent=ranks[mi];
+ document.getElementById("largest").textContent=maxVal.toFixed(3)+"%";
+ let top=ranks.length-1;
+ let cum=0;
+ for(let i=0;i<vals.length;i++){cum+=vals[i];if(100-cum<=1){top=i;break}}
+ document.getElementById("top1").textContent=ranks[top];
+ document.getElementById("example").textContent=`In ${playlist.value}, ${ranks[mi]} has the largest share at ${maxVal.toFixed(3)}%.`;
+ table.innerHTML=pairs.map(o=>`<tr><td>${o.name}</td><td>${vals[o.i].toFixed(3)}%</td><td>${mode==="distribution"?vals[o.i].toFixed(3)+"%":reverse[o.i].toFixed(3)+"%"}</td></tr>`).join("");
+}
+function showTip(name,v,e){tip.innerHTML="<b>"+name+"</b><br>"+(view.value==="distribution"?"Players in rank: ":"Players above rank: ")+v.toFixed(3)+"%";tip.style.display="block";if(e){tip.style.left=(e.clientX+12)+"px";tip.style.top=(e.clientY+12)+"px"}}
+document.getElementById("sortBtn").onclick=()=>{const vals=data[playlist.value];order.sort((a,b)=>vals[b]-vals[a]);render()};
+document.getElementById("resetBtn").onclick=()=>{order=[...Array(22).keys()];render()};
+playlist.onchange=()=>{order=[...Array(22).keys()];render()};view.onchange=render;render();
+</script>
+</body>
+</html>
