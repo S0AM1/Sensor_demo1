@@ -1,0 +1,56 @@
+<!doctype html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BeatLab iPad Drum Machine</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080c15;color:#eef3ff;font:16px -apple-system,BlinkMacSystemFont,sans-serif}
+header{padding:22px 5%;padding-top:max(22px,env(safe-area-inset-top));background:#0b1220;border-bottom:1px solid #26344d}
+h1{margin:0;color:#8d5cff;font-size:30px}p{color:#96a5ba}.wrap{max-width:1100px;margin:20px auto;padding:0 12px}
+.card{background:#0d1625;border:1px solid #263650;border-radius:16px;padding:16px;margin-bottom:16px}.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+button{font:inherit;color:white;background:#152238;border:1px solid #344663;border-radius:11px;padding:13px 17px;min-height:48px;touch-action:manipulation}
+.play{border-color:#45e47c;background:#183125}input{accent-color:#a46aff}.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.grid{display:grid;grid-template-columns:120px repeat(16,44px);gap:5px;min-width:870px}.num{text-align:center;color:#78869b;font-size:12px;padding:8px 0}.label{display:flex;align-items:center;font-weight:bold}
+.cell{height:45px;padding:0;background:#182438;border-radius:7px}.cell.on{background:var(--c);border-color:var(--c);box-shadow:0 0 12px var(--c)}.playing{outline:3px solid white}
+.pads{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.pad{border-color:var(--c);min-height:85px}.pad small{display:block;color:#8997ac;margin-top:5px}
+.lesson h2{color:#bf91ff}.lesson li{margin:10px;color:#aebbd0}
+@media(max-width:800px){.pads{grid-template-columns:repeat(2,1fr)}}
+</style></head><body>
+<header><h1>BEATLAB</h1><p style="margin:4px 0 0">Drum Machine • Rhythm Lessons</p></header>
+<div class="wrap">
+<div class="card"><div class="controls">
+<button class="play" id="play">▶ Play</button><button id="stop">■ Stop</button>
+<label>Tempo <b id="tempoText">120</b> BPM<br><input id="tempo" type="range" min="60" max="180" value="120"></label>
+<label>Volume<br><input id="volume" type="range" min="0" max="100" value="70"></label>
+</div><p id="status">Tap Play to start.</p></div>
+<div class="card"><h2>16-Step Sequencer</h2><p>Tap the squares to build a beat.</p><div class="scroll"><div id="seq" class="grid"></div></div></div>
+<div class="card"><h2>Drum Pads</h2><div id="pads" class="pads"></div></div>
+<div class="card"><h2>Presets</h2><div class="controls"><button id="basic">Basic Rock</button><button id="funk">Funk</button><button id="house">House</button><button id="clear">Clear</button></div></div>
+<div class="card lesson"><h2>🎓 Lessons</h2><h3>1. Rhythm</h3><p>Most basic beats count 1, 2, 3, 4. The kick provides the low pulse, while the snare often lands on 2 and 4.</p><h3>2. Your First Beat</h3><ul><li>Kick: steps 1, 5, 9, 13</li><li>Snare: steps 5 and 13</li><li>Closed hi-hat: every other step</li></ul><h3>3. Practice</h3><p>Start slowly, listen to the timing, then gradually increase the tempo.</p></div>
+</div>
+<script>
+(()=>{"use strict";
+const S=[["Kick","Q","#ff4f67"],["Snare","W","#ff8a32"],["Clap","E","#ffc02e"],["Hat Closed","A","#7bd84a"],["Hat Open","S","#35d4bd"],["Ride","D","#419cff"],["Crash","Z","#a55cff"]];
+let P=S.map(()=>Array(16).fill(0)),ctx=null,running=false,pos=0,timer=null,vol=.7;
+const $=x=>document.getElementById(x);
+function audio(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();return ctx}
+function sound(i){let a=audio(),t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);g.gain.value=vol;
+if(i===0){o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(45,t+.18);g.gain.setValueAtTime(.8,t);g.gain.exponentialRampToValueAtTime(.001,t+.2)}
+else{o.type=i<3?"triangle":"square";o.frequency.value=[190,330,700,950,1300,1700][i-1];g.gain.setValueAtTime(i<3?.3:.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.1)}
+o.start(t);o.stop(t+.21)}
+function render(){let q=$("seq");q.innerHTML="<div></div>"+Array.from({length:16},(_,i)=>`<div class=num>${i+1}</div>`).join("");
+S.forEach((s,r)=>{q.innerHTML+=`<div class=label>${s[0]}</div>`;for(let c=0;c<16;c++)q.innerHTML+=`<button class=cell style="--c:${s[2]}" data-r=${r} data-c=${c}></button>`});
+q.querySelectorAll(".cell").forEach(b=>b.classList.toggle("on",!!P[b.dataset.r][b.dataset.c]));
+q.querySelectorAll(".cell").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();let r=+b.dataset.r,c=+b.dataset.c;P[r][c]=!P[r][c];b.classList.toggle("on",P[r][c]);sound(r)}));
+let pads=$("pads");pads.innerHTML=S.map((s,i)=>`<button class=pad style="--c:${s[2]}" data-i=${i}>${s[0]}<small>${s[1]}</small></button>`).join("");
+pads.querySelectorAll(".pad").forEach(b=>b.addEventListener("pointerdown",e=>{e.preventDefault();sound(+b.dataset.i)}))}
+function tick(){document.querySelectorAll(".playing").forEach(x=>x.classList.remove("playing"));document.querySelectorAll(`[data-c="${pos}"]`).forEach(x=>x.classList.add("playing"));P.forEach((r,i)=>r[pos]&&sound(i));pos=(pos+1)%16}
+function start(){if(running)return;audio();running=true;pos=0;timer=setInterval(tick,60000/+$("tempo").value/4);tick();$("play").textContent="⏸ Playing";$("status").textContent="Playing…"}
+function stop(){running=false;clearInterval(timer);timer=null;document.querySelectorAll(".playing").forEach(x=>x.classList.remove("playing"));$("play").textContent="▶ Play";$("status").textContent="Tap Play to start."}
+function preset(t){P=S.map(()=>Array(16).fill(0));let add=(r,a)=>a.forEach(x=>P[r][x]=1);if(t==="basic"){add(0,[0,4,8,12]);add(1,[4,12]);add(3,[0,2,4,6,8,10,12,14])}if(t==="funk"){add(0,[0,3,8,10,12]);add(1,[4,12]);add(2,[6,14]);add(3,[0,2,4,6,8,10,12,14])}if(t==="house"){add(0,[0,4,8,12]);add(1,[4,12]);add(3,[0,2,4,6,8,10,12,14]);add(4,[6,14])}render()}
+$("play").addEventListener("pointerdown",()=>running?stop():start());$("stop").addEventListener("pointerdown",stop);
+$("tempo").addEventListener("input",()=>{ $("tempoText").textContent=$("tempo").value;if(running){stop();start()}});
+$("volume").addEventListener("input",()=>vol=$("volume").value/100);
+$("basic").onclick=()=>preset("basic");$("funk").onclick=()=>preset("funk");$("house").onclick=()=>preset("house");$("clear").onclick=()=>{stop();P=S.map(()=>Array(16).fill(0));render()};
+document.addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();running?stop():start()}let i=S.findIndex(s=>s[1]===e.key.toUpperCase());if(i>=0)sound(i)});
+preset("basic");
+})();
+</script></body></html>
