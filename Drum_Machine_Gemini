@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Drum Machine & Lessons</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --active-step: #f43f5e;
+            --pad-bg: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        @media(min-width: 768px) {
+            .main-container {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Controls Panel */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-secondary {
+            background-color: #475569;
+            color: white;
+        }
+
+        .tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tempo-control input[type="range"] {
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* Sequencer Grid */
+        .sequencer {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .track-row {
+            display: grid;
+            grid-template-columns: 80px repeat(16, 1fr);
+            gap: 4px;
+            align-items: center;
+        }
+
+        .track-label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--text-muted);
+            text-align: right;
+            padding-right: 8px;
+        }
+
+        .step {
+            aspect-ratio: 1;
+            background-color: #334155;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+
+        .step.active {
+            background-color: var(--active-step);
+            border-color: #fb7185;
+            box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+        }
+
+        .step.current {
+            border: 2px solid var(--accent);
+        }
+
+        /* Live Pads */
+        .pad-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .drum-pad {
+            background-color: var(--pad-bg);
+            border: 2px solid #475569;
+            color: var(--text-main);
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.1s, border-color 0.1s;
+        }
+
+        .drum-pad:hover {
+            border-color: var(--accent);
+        }
+
+        .drum-pad:active, .drum-pad.triggered {
+            background-color: var(--accent);
+            color: #0f172a;
+        }
+
+        .pad-hint {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Lessons Section */
+        .lessons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .lesson-item {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .lesson-item h3 {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.3rem;
+        }
+
+        .lesson-item p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Web Drum Machine</h1>
+        <p>Learn core rhythmic patterns using the step sequencer and Web Audio synthesizer.</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Column: Drum Machine -->
+        <div class="card">
+            <div class="controls">
+                <div>
+                    <button id="playBtn" class="btn">Play</button>
+                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                </div>
+                <div class="tempo-control">
+                    <label for="bpmSlider">BPM: <span id="bpmVal">120</span></label>
+                    <input type="range" id="bpmSlider" min="60" max="180" value="120">
+                </div>
+            </div>
+
+            <div class="sequencer" id="sequencer">
+                <!-- Rows will be injected via JS -->
+            </div>
+
+            <div class="pad-grid">
+                <div class="drum-pad" data-sound="kick">Kick <span class="pad-hint">Key: A</span></div>
+                <div class="drum-pad" data-sound="snare">Snare <span class="pad-hint">Key: S</span></div>
+                <div class="drum-pad" data-sound="hihat">Hi-Hat <span class="pad-hint">Key: D</span></div>
+                <div class="drum-pad" data-sound="clap">Clap <span class="pad-hint">Key: F</span></div>
+            </div>
+        </div>
+
+        <!-- Right Column: Interactive Lessons -->
+        <div class="card">
+            <h2>Lessons</h2>
+            <div class="lessons-list">
+                <div class="lesson-item">
+                    <h3>1. Four-on-the-Floor</h3>
+                    <p>The backbone of dance and house music. The kick drum hits on every single quarter note (beats 1, 5, 9, 13).</p>
+                    <button class="btn btn-secondary load-lesson" data-lesson="fourOnFloor">Load Lesson</button>
+                </div>
+                <div class="lesson-item">
+                    <h3>2. Rock Beat</h3>
+                    <p>Standard rock groove featuring a kick on 1 and 9, backbeat snare hits on 5 and 13, and steady eighth-note hi-hats.</p>
+                    <button class="btn btn-secondary load-lesson" data-lesson="rockBeat">Load Lesson</button>
+                </div>
+                <div class="lesson-item">
+                    <h3>3. Basic Hip-Hop Groove</h3>
+                    <p>A syncopated kick pattern paired with a snare hit on beats 5 and 13 to give it that head-nodding bounce.</p>
+                    <button class="btn btn-secondary load-lesson" data-lesson="hiphopGroove">Load Lesson</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio API Synth Engine
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playKick() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+            gain.gain.setValueAtTime(1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playSnare() {
+            initAudio();
+            // Noise buffer for snare rattle
+            const bufferSize = audioCtx.sampleRate * 0.2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 800;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 0.2);
+
+            // Body tone
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.connect(oscGain);
+            oscGain.connect(audioCtx.destination);
+
+            osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+
+            oscGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playHiHat() {
+            initAudio();
+            const bufferSize = audioCtx.sampleRate * 0.05;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 5000;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playClap() {
+            initAudio();
+            const bufferSize = audioCtx.sampleRate * 0.25;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 1200;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 0.25);
+        }
+
+        const soundMap = {
+            kick: playKick,
+            snare: playSnare,
+            hihat: playHiHat,
+            clap: playClap
+        };
+
+        // Sequencer State
+        const tracks = [
+            { name: 'Kick', id: 'kick', steps: Array(16).fill(false) },
+            { name: 'Snare', id: 'snare', steps: Array(16).fill(false) },
+            { name: 'Hi-Hat', id: 'hihat', steps: Array(16).fill(false) },
+            { name: 'Clap', id: 'clap', steps: Array(16).fill(false) }
+        ];
+
+        let isPlaying = false;
+        let currentStep = 0;
+        let timerId = null;
+        let bpm = 120;
+
+        const sequencerEl = document.getElementById('sequencer');
+
+        function buildSequencer() {
+            sequencerEl.innerHTML = '';
+            tracks.forEach((track, trackIndex) => {
+                const row = document.createElement('div');
+                row.className = 'track-row';
+
+                const label = document.createElement('div');
+                label.className = 'track-label';
+                label.textContent = track.name;
+                row.appendChild(label);
+
+                track.steps.forEach((active, stepIndex) => {
+                    const step = document.createElement('div');
+                    step.className = `step ${active ? 'active' : ''}`;
+                    if (stepIndex === currentStep && isPlaying) {
+                        step.classList.add('current');
+                    }
+                    step.addEventListener('click', () => {
+                        tracks[trackIndex].steps[stepIndex] = !tracks[trackIndex].steps[stepIndex];
+                        buildSequencer();
+                    });
+                    row.appendChild(step);
+                });
+
+                sequencerEl.appendChild(row);
+            });
+        }
+
+        function stepTick() {
+            // Play sounds for active steps in current column
+            tracks.forEach(track => {
+                if (track.steps[currentStep]) {
+                    soundMap[track.id]();
+                }
+            });
+
+            buildSequencer();
+            currentStep = (currentStep + 1) % 16;
+        }
+
+        function startPlayback() {
+            initAudio();
+            if (isPlaying) return;
+            isPlaying = true;
+            document.getElementById('playBtn').textContent = 'Stop';
+            const interval = (60 / bpm / 4) * 1000; // 16th notes
+            timerId = setInterval(stepTick, interval);
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            clearInterval(timerId);
+            currentStep = 0;
+            document.getElementById('playBtn').textContent = 'Play';
+            buildSequencer();
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            tracks.forEach(track => track.steps.fill(false));
+            buildSequencer();
+        });
+
+        const bpmSlider = document.getElementById('bpmSlider');
+        const bpmVal = document.getElementById('bpmVal');
+        bpmSlider.addEventListener('input', (e) => {
+            bpm = e.target.value;
+            bpmVal.textContent = bpm;
+            if (isPlaying) {
+                clearInterval(timerId);
+                const interval = (60 / bpm / 4) * 1000;
+                timerId = setInterval(stepTick, interval);
+            }
+        });
+
+        // Live pads interaction
+        document.querySelectorAll('.drum-pad').forEach(pad => {
+            const sound = pad.getAttribute('data-sound');
+            pad.addEventListener('click', () => {
+                soundMap[sound]();
+                pad.classList.add('triggered');
+                setTimeout(() => pad.classList.remove('triggered'), 100);
+            });
+        });
+
+        // Keyboard bindings
+        window.addEventListener('keydown', (e) => {
+            const keyMap = { 'a': 'kick', 's': 'snare', 'd': 'hihat', 'f': 'clap' };
+            const sound = keyMap[e.key.toLowerCase()];
+            if (sound) {
+                soundMap[sound]();
+                const pad = document.querySelector(`[data-sound="${sound}"]`);
+                if (pad) {
+                    pad.classList.add('triggered');
+                    setTimeout(() => pad.classList.remove('triggered'), 100);
+                }
+            }
+        });
+
+        // Lessons Loader
+        const lessonsData = {
+            fourOnFloor: {
+                kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+                snare: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+                hihat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+                clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]
+            },
+            rockBeat: {
+                kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+                snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+                hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+                clap:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]
+            },
+            hiphopGroove: {
+                kick:  [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,0],
+                snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+                hihat: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+                clap:  [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]
+            }
+        };
+
+        document.querySelectorAll('.load-lesson').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lessonKey = btn.getAttribute('data-lesson');
+                const pattern = lessonsData[lessonKey];
+                if (pattern) {
+                    tracks.forEach(track => {
+                        track.steps = pattern[track.id].map(val => val === 1);
+                    });
+                    buildSequencer();
+                }
+            });
+        });
+
+        // Initial render
+        buildSequencer();
+    </script>
+</body>
+</html>
